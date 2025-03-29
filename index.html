@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
@@ -489,8 +489,8 @@ function updateUrlStatus(li, isAccessible, duration) {
         statusBadge.textContent = '正常';
         statusClass = 'status-normal';
     } else {
-        li.classList.add('disabled');
-        statusBadge.textContent = '无法访问';
+        
+        statusBadge.textContent = '可能无法访问（可点击尝试）';
         statusClass = 'status-error';
     }
 
@@ -501,10 +501,8 @@ function updateUrlStatus(li, isAccessible, duration) {
 
 function checkUrl(url, li) {
     return new Promise((resolve) => {
-        const img = new Image();
-        let isResolved = false;
         const startTime = performance.now();
-
+        let isResolved = false;
         const timeoutId = setTimeout(() => {
             if (!isResolved) {
                 updateUrlStatus(li, false, 5000);
@@ -513,30 +511,43 @@ function checkUrl(url, li) {
             }
         }, 5000); // 5秒超时
 
-        img.onload = function() {
-            if (!isResolved) {
-                clearTimeout(timeoutId);
-                const endTime = performance.now();
-                const duration = Math.round(endTime - startTime);
-                updateUrlStatus(li, true, duration);
-                isResolved = true;
-                resolve(true);
-            }
-        };
-
-        img.onerror = function() {
-            if (!isResolved) {
-                clearTimeout(timeoutId);
-                const endTime = performance.now();
-                const duration = Math.round(endTime - startTime);
-                updateUrlStatus(li, false, duration);
-                isResolved = true;
-                resolve(false);
-            }
-        };
-
-        // 添加一个随机参数来避免缓存
-        img.src = url + '/favicon.ico?' + new Date().getTime();
+        // 先尝试用 fetch 检测网页（绕过 CORS 限制）
+        fetch(url, { mode: 'no-cors' })
+            .then(() => {
+                if (!isResolved) {
+                    clearTimeout(timeoutId);
+                    const endTime = performance.now();
+                    const duration = Math.round(endTime - startTime);
+                    updateUrlStatus(li, true, duration);
+                    isResolved = true;
+                    resolve(true);
+                }
+            })
+            .catch(() => {
+                // 如果 fetch 失败（如 CORS 限制），再尝试加载 favicon.ico
+                const img = new Image();
+                img.onload = function() {
+                    if (!isResolved) {
+                        clearTimeout(timeoutId);
+                        const endTime = performance.now();
+                        const duration = Math.round(endTime - startTime);
+                        updateUrlStatus(li, true, duration);
+                        isResolved = true;
+                        resolve(true);
+                    }
+                };
+                img.onerror = function() {
+                    if (!isResolved) {
+                        clearTimeout(timeoutId);
+                        const endTime = performance.now();
+                        const duration = Math.round(endTime - startTime);
+                        updateUrlStatus(li, false, duration);
+                        isResolved = true;
+                        resolve(false);
+                    }
+                };
+                img.src = url + '/favicon.ico?' + new Date().getTime(); // 避免缓存
+            });
     });
 }
 
