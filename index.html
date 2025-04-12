@@ -714,39 +714,5 @@ document.querySelector('.bookmark-btn').addEventListener('click', function(e) {
     }
 });
 </script>
-    <script>
-function closePopup() {
-  document.getElementById('popup-notice').style.display = 'none';
-  const today = new Date().toDateString();
-  localStorage.setItem('popupDismissedAt', today);
-}
-
-window.addEventListener('load', () => {
-  const lastDismissed = localStorage.getItem('popupDismissedAt');
-  const today = new Date().toDateString();
-
-  if (lastDismissed !== today) {
-    setTimeout(() => {
-      document.getElementById('popup-notice').style.display = 'block';
-    }, 3000); // 3秒后自动弹出
-  }
-});
-</script>
-
-    <div id="popup-notice" style="display:none; position: fixed; z-index: 9999; top: 20%; left: 50%; transform: translateX(-50%); background: white; border: 1px solid #ddd; border-radius: 12px; padding: 20px 24px; max-width: 90%; width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-family: 'HarmonyOS Sans SC', sans-serif;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-    <strong style="font-size: 18px;">📢 系统通知</strong>
-    <button onclick="closePopup()" style="background: none; border: none; font-size: 18px; cursor: pointer;">&times;</button>
-  </div>
-  <div style="font-size: 15px; line-height: 1.6;">
-    🚀 网站已完成全面升级，<strong>请重新导入订阅链接</strong>，旧链接将不再可用。<br><br>
-    🔐 <strong>所有用户的初始密码为 12345678</strong>，请尽快登录后进入个人中心修改密码，保障账户安全。<br><br>
-    🧭 新界面功能较多，欢迎自行探索。<br>
-    💬 如遇问题，请联系站内工单或 Telegram 客服。
-  </div>
-</div>
-
-
-
 </body>
 </html>
