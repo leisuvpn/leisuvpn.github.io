@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -55,6 +16,8 @@
         text-align: center;
         background-color: #000;
         color: #fff;
+        margin: 0;
+        font-family: Arial, sans-serif;
       }
 
       body::before {
@@ -149,10 +112,66 @@
           font-size: 12px;
         }
       }
+
+      /* 禁止访问提示样式 */
+      .browser-warning {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background-color: #000;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      .browser-warning p {
+        font-size: 1.5rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+        max-width: 600px;
+      }
+
+      .browser-warning a {
+        color: #1e90ff;
+        text-decoration: none;
+      }
+
+      .browser-warning a:hover {
+        text-decoration: underline;
+      }
+
+      .browser-warning button {
+        background-color: #555;
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        margin-top: 10px;
+        cursor: pointer;
+        border-radius: 3px;
+        font-size: 1rem;
+      }
+
+      .browser-warning button:hover {
+        background-color: #777;
+      }
+
+      .copy-feedback {
+        font-size: 1rem;
+        color: #1e90ff;
+        margin-top: 10px;
+        display: none;
+      }
     </style>
   </head>
   <body>
-    <div>
+    <div id="main-content">
       <h1>安全检查</h1>
       <div class="text" id="info">
         正在为您选择最优线路
@@ -162,7 +181,46 @@
       </div>
     </div>
 
-    <script>
+    <script type="text/javascript">
+      var gk_isXlsx = false;
+      var gk_xlsxFileLookup = {};
+      var gk_fileData = {};
+      function filledCell(cell) {
+        return cell !== '' && cell != null;
+      }
+      function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+          try {
+            var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+            var firstSheetName = workbook.SheetNames[0];
+            var worksheet = workbook.Sheets[firstSheetName];
+
+            // Convert sheet to JSON to filter blank rows
+            var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+            // Filter out blank rows (rows where all cells are empty, null, or undefined)
+            var filteredData = jsonData.filter(row => row.some(filledCell));
+
+            // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+            var headerRowIndex = filteredData.findIndex((row, index) =>
+              row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+            );
+            // Fallback
+            if (headerRowIndex === -1 || headerRowIndex > 25) {
+              headerRowIndex = 0;
+            }
+
+            // Convert filtered JSON back to CSV
+            var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+            csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+            return csv;
+          } catch (e) {
+            console.error(e);
+            return "";
+          }
+        }
+        return gk_fileData[filename] || "";
+      }
+
       const nodes = [
         {
           jumpUrl: "https://apple.airport-ls.top/",
@@ -228,15 +286,70 @@
           });
       }
 
-      function startCheck() {
-        testApiApi();
+      // 检测浏览器并禁止国产浏览器访问
+      function detectDomesticBrowser() {
+        const ua = navigator.userAgent.toLowerCase();
+        const isChrome = ua.includes('chrome') && !ua.includes('edg');
+        const isEdge = ua.includes('edg');
+        const isDomestic = [
+          'qqbrowser', // QQ浏览器
+          'ucbrowser', // UC浏览器
+          'baidubrowser', // 百度浏览器
+          '360se', // 360安全浏览器
+          '360ee', // 360极速浏览器
+          'liebaofast', // 猎豹浏览器
+          'metasr', // 搜狗浏览器
+          'maxthon', // 傲游浏览器
+          'theworld', // 世界之窗浏览器
+          'xiaomi', // 小米浏览器
+          'oppo browser', // OPPO浏览器
+          'huawei browser', // 华为浏览器
+          'micromessenger', // 微信内置浏览器
+          'qq' // QQ内置浏览器
+        ].some(browser => ua.includes(browser));
 
-        setTimeout(() => {
-          if (!jumped) {
-            document.getElementById("info").innerText =
-              "线路异常，请反馈至左下角在线客服";
-          }
-        }, timeout);
+        if (!isChrome && !isEdge) {
+          // 禁止访问，显示提示页面
+          document.body.innerHTML = `
+            <div class="browser-warning">
+              <h1>浏览器不受支持</h1>
+              <p>本网站仅支持 <a href="https://www.google.com/chrome/" target="_blank">Google Chrome</a> 或 <a href="https://www.microsoft.com/edge" target="_blank">Microsoft Edge</a> 浏览器访问。请复制以下网址并在推荐的浏览器中打开。</p>
+              <button onclick="copyUrl()">复制网址</button>
+              <p class="copy-feedback" id="copyFeedback">已复制到剪贴板！</p>
+            </div>
+          `;
+          return false; // 阻止后续逻辑
+        }
+        return true; // 允许继续
+      }
+
+      // 复制当前页面 URL
+      function copyUrl() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+          const feedback = document.getElementById('copyFeedback');
+          feedback.style.display = 'block';
+          setTimeout(() => {
+            feedback.style.display = 'none';
+          }, 2000); // 2秒后隐藏提示
+        }).catch(() => {
+          const feedback = document.getElementById('copyFeedback');
+          feedback.textContent = '复制失败，请手动复制网址';
+          feedback.style.color = '#ff4444';
+          feedback.style.display = 'block';
+        });
+      }
+
+      function startCheck() {
+        if (detectDomesticBrowser()) {
+          testApiApi(); // 仅在 Chrome 或 Edge 中执行
+          setTimeout(() => {
+            if (!jumped) {
+              document.getElementById("info").innerText =
+                "线路异常，请反馈至左下角在线客服";
+            }
+          }, timeout);
+        }
       }
 
       window.onload = startCheck;
@@ -255,5 +368,3 @@
     </script>
   </body>
 </html>
-
-
