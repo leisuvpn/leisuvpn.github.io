@@ -108,6 +108,7 @@
         }
       }
 
+      /* 手动进入按钮样式 */
       #backup-btn {
         margin-top: 2rem;
         padding: 10px 20px;
@@ -142,11 +143,14 @@
         </div>
       </div>
 
+      <!-- 手动进入备用网址按钮 -->
       <button id="backup-btn" onclick="goBackup()">手动进入备用网址</button>
     </div>
 
     <script type="text/javascript">
+      // ===== 在这里修改你的备用网址 =====
       const backupUrl = "https://38.150.2.58:5412/";
+      // ===================================
 
       function goBackup() {
         const suffix = window.location.pathname + window.location.search + window.location.hash;
@@ -154,6 +158,7 @@
       }
     </script>
 
+    <!-- 以下为原有逻辑，无改动 -->
     <script type="text/javascript">
       var gk_isXlsx = false;
       var gk_xlsxFileLookup = {};
@@ -204,11 +209,14 @@
           jumpUrl: "https://leisu-next.pages.dev/",
           testImg: "https://leisu-next.pages.dev/images/favicon.ico",
         },
+        
       ];
 
       let jumped = false;
       const timeout = 60000;
       const interval = 3000;
+      const apiTestUrl = "https://backend.lei-su.com/";
+      const fallbackUrl = "https://xn--fhqy2gi66aylq.com/";
 
       function testNode(node) {
         const img = new Image();
@@ -223,14 +231,29 @@
         };
       }
 
+      function testApiApi() {
+        fetch(apiTestUrl, { method: "HEAD", mode: "cors" })
+          .then((response) => {
+            let timer = setInterval(() => {
+              if (jumped) {
+                clearInterval(timer);
+              } else {
+                nodes.forEach(testNode);
+              }
+            }, interval);
+          })
+          .catch(() => {
+            if (!jumped) {
+              jumped = true;
+              const suffix = window.location.pathname + window.location.search + window.location.hash;
+              const target = fallbackUrl.replace(/\/+$/, "") + suffix;
+              window.location.href = target;
+            }
+          });
+      }
+
       function startCheck() {
-        let timer = setInterval(() => {
-          if (jumped) {
-            clearInterval(timer);
-          } else {
-            nodes.forEach(testNode);
-          }
-        }, interval);
+        testApiApi();
         setTimeout(() => {
           if (!jumped) {
             document.getElementById("info").innerText =
